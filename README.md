@@ -11,5 +11,5 @@ interactive terminal.
 * `npm install`
 * Install jupyter-console `pip install jupyter-console`
 * Launch `jupyter console`
-* Type `%connect_info` into your jupyter console
+* Type `%connect_info` into your jupyter console, grab the path to the kernel-XXXX.json
 * Run `node index.js /path/to/your/kernel-XXXX.json`

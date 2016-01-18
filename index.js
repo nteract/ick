@@ -48,7 +48,6 @@ function startREPL(langInfo) {
   rl.prompt();
 
   rl.on('line', (line) => {
-    console.log(chalk.red(line));
     const executeRequest = createMessage(sessionID, 'execute_request');
     executeRequest.content = {
       code: line,
@@ -63,15 +62,35 @@ function startREPL(langInfo) {
                                .publish()
                                .refCount();
 
-    const executeResult = childMessages
-                            .filter(msg => msg.header.msg_type === 'execute_result')
-                            .map(msg => msg.content);
+    const displayData = childMessages
+                            .filter(msg => msg.header.msg_type === 'execute_result' ||
+                                           msg.header.msg_type === 'display_data')
+                            .filter(msg => msg.content)
+                            .map(msg => msg.content.data);
+
     const executeReply = childMessages
                            .filter(msg => msg.header.msg_type === 'execute_reply')
                            .map(msg => msg.content);
 
-    executeResult.subscribe(content => {
-      console.log(content);
+    const streamReply = childMessages
+                           .filter(msg => msg.header.msg_type === 'stream')
+                           .map(msg => msg.content);
+
+    streamReply.subscribe(content => {
+      switch(content.name) {
+      case 'stdout':
+        process.stdout.write(content.text);
+        break;
+      case 'stderr':
+        process.stderr.write(content.text);
+        break;
+      }
+    });
+
+    displayData.subscribe(data => {
+      if(data['text/plain']) {
+        console.log(data['text/plain']);
+      }
     });
 
     executeReply.subscribe(content => {
@@ -85,7 +104,7 @@ function startREPL(langInfo) {
     console.log('Have a great day!');
     shell.close();
     iopub.close();
-    process.exit(0);
+    process.stdin.destroy();
   });
 }
 

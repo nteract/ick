@@ -1,5 +1,10 @@
 /* eslint camelcase: 0 */ // <-- Per Jupyter message spec
-/* eslint no-process-exit: 0 */
+/* eslint spaced-comment: 0 */
+
+/*****************************************************************************
+ * Ick is an interactive console for tinkering with the Jupyter message spec *
+ * and a backing kernel.                                                     *
+ *****************************************************************************/
 
 const readline = require('readline');
 
@@ -7,6 +12,7 @@ const enchannel = require('enchannel-zmq-backend');
 const uuid = require('uuid');
 const chalk = require('chalk');
 
+// TODO: Launch a kernel
 // For now, rely on an argument for a kernel runtime
 const kernel = require(process.argv[2]);
 

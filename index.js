@@ -12,6 +12,9 @@ const enchannel = require('enchannel-zmq-backend');
 const uuid = require('uuid');
 const chalk = require('chalk');
 
+const marked = require('marked');
+const TerminalRenderer = require('marked-terminal');
+
 // TODO: Launch a kernel
 // For now, rely on an argument for a kernel runtime
 const kernel = require(process.argv[2]);
@@ -49,6 +52,10 @@ function isChildMessage(msg) {
 function startREPL(langInfo) {
   const rl = readline.createInterface(process.stdin, process.stdout);
   const iopub = enchannel.createIOPubSubject(identity, kernel);
+
+  marked.setOptions({
+    renderer: new TerminalRenderer(),
+  });
 
   rl.setPrompt(`ick${langInfo.file_extension}> `);
   rl.prompt();
@@ -94,7 +101,10 @@ function startREPL(langInfo) {
     });
 
     displayData.subscribe(data => {
-      if(data['text/plain']) {
+      if(data['text/markdown']) {
+        console.log(marked(data['text/markdown']));
+      }
+      else if(data['text/plain']) {
         console.log(data['text/plain']);
       }
     });

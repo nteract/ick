@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 /* eslint camelcase: 0 */ // <-- Per Jupyter message spec
 /* eslint spaced-comment: 0 */
 

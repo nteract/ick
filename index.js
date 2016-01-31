@@ -134,13 +134,15 @@ function main(c) {
         rl.prompt();
       });
 
-      shell.send(executeRequest);
+      shell.next(executeRequest);
 
     }).on('close', () => {
       console.log('Have a great day!');
-      shell.close();
-      iopub.close();
+      c.spawn.kill();
+      shell.complete();
+      iopub.complete();
       process.stdin.destroy();
+      fs.unlink(c.connFile);
     });
   }
 
@@ -152,9 +154,13 @@ function main(c) {
     process.stdout.write(chalk.green(content.banner));
     startREPL(content.language_info);
   });
-  shell.send(kernelInfoRequest);
+  shell.next(kernelInfoRequest);
 }
 
 const kernelName = process.argv[2];
 
-spawnteract.launch(kernelName).then(main);
+spawnteract.launch(kernelName)
+           .then(main)
+           .catch(e => {
+             console.error(e);
+           });

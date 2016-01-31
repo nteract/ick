@@ -7,14 +7,13 @@ interactive terminal.
 
 ## Installation
 
-Make sure you have zmq headers for your platform, build tools, yada yada.
-(Editor's Note: Surely there's a more substantive way to express this.)
+Make sure you have [zmq headers for your platform, build tools, yada yada](https://github.com/nteract/enchannel-zmq-backend#zeromq-dependency).
 
 ```
 npm install -g ick
 ```
 
-:warning: This is full of bugs! Files aren't cleaned up yet! :warning:
+:warning: This is full of bugs. Check out the issues to find out how to help!
 
 ## Running
 

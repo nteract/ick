@@ -20,5 +20,20 @@
     "spawnteract": "0.0.4",
     "temp": "^0.8.3",
     "uuid": "^2.0.1"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nteract/ick.git"
+  },
+  "keywords": [
+    "interactive",
+    "console",
+    "jupyter",
+    "nteract"
+  ],
+  "bugs": {
+    "url": "https://github.com/nteract/ick/issues"
+  },
+  "homepage": "https://github.com/nteract/ick#readme"
 }

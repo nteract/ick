@@ -28,7 +28,7 @@ function main(c) {
   const shell = enchannel.createShellSubject(identity, c.config);
   // const control = enchannel.createControlSubject(identity, kernel);
   // const stdinChannel = enchannel.createStdinSubject(identity, kernel);
-  
+
   function createMessage(session, msg_type) {
     const username = process.env.LOGNAME || process.env.USER ||
                      process.env.LNAME || process.env.USERNAME;
@@ -46,24 +46,24 @@ function main(c) {
       content: {},
     };
   }
-  
+
   const sessionID = uuid.v4();
-  
+
   function isChildMessage(msg) {
     return this.header.msg_id === msg.parent_header.msg_id;
   }
-  
+
   function startREPL(langInfo) {
     const rl = readline.createInterface(process.stdin, process.stdout);
     const iopub = enchannel.createIOPubSubject(identity, c.config);
-  
+
     marked.setOptions({
       renderer: new TerminalRenderer(),
     });
-  
+
     rl.setPrompt(`ick${langInfo.file_extension}> `);
     rl.prompt();
-  
+
     rl.on('line', (line) => {
       const executeRequest = createMessage(sessionID, 'execute_request');
       executeRequest.content = {
@@ -74,25 +74,25 @@ function main(c) {
         allow_stdin: false,
         stop_on_error: false,
       };
-  
+
       const childMessages = iopub.filter(isChildMessage.bind(executeRequest))
                                  .publish()
                                  .refCount();
-  
+
       const displayData = childMessages
                               .filter(msg => msg.header.msg_type === 'execute_result' ||
                                              msg.header.msg_type === 'display_data')
                               .filter(msg => msg.content)
                               .map(msg => msg.content.data);
-  
+
       const executeReply = childMessages
                              .filter(msg => msg.header.msg_type === 'execute_reply')
                              .map(msg => msg.content);
-  
+
       const streamReply = childMessages
                              .filter(msg => msg.header.msg_type === 'stream')
                              .map(msg => msg.content);
-  
+
       streamReply.subscribe(content => {
         switch(content.name) {
         case 'stdout':
@@ -103,7 +103,7 @@ function main(c) {
           break;
         }
       });
-  
+
       displayData.subscribe(data => {
         if(data['image/png']) {
           temp.open('ick-image', (err, info) => {
@@ -128,14 +128,14 @@ function main(c) {
           console.log(data['text/plain']);
         }
       });
-  
+
       executeReply.subscribe(content => {
         rl.setPrompt(`ick${langInfo.file_extension}:${content.execution_count}> `);
         rl.prompt();
       });
-  
+
       shell.send(executeRequest);
-  
+
     }).on('close', () => {
       console.log('Have a great day!');
       shell.close();
@@ -143,11 +143,11 @@ function main(c) {
       process.stdin.destroy();
     });
   }
-  
+
   const kernelInfoRequest = createMessage(sessionID, 'kernel_info_request');
   const kernelReply = shell.filter(msg => msg.parent_header.msg_id === kernelInfoRequest.header.msg_id)
                            .map(msg => msg.content);
-  
+
   kernelReply.subscribe(content => {
     process.stdout.write(chalk.green(content.banner));
     startREPL(content.language_info);
@@ -155,9 +155,6 @@ function main(c) {
   shell.send(kernelInfoRequest);
 }
 
-// TODO: Launch a kernel
-// For now, rely on an argument for a kernel runtime
 const kernelName = process.argv[2];
 
-spawnteract.launch(kernelName).then(main)
-
+spawnteract.launch(kernelName).then(main);

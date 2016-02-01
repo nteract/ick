@@ -63,7 +63,9 @@ function main(c) {
       renderer: new TerminalRenderer(),
     });
 
-    rl.setPrompt(`ick${langInfo.file_extension}:1> `);
+    var counter = 1;
+
+    rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
     rl.prompt();
 
     rl.on('line', (line) => {
@@ -101,8 +103,6 @@ function main(c) {
                              .filter(msg => msg.header.msg_type === 'stream')
                              .map(msg => msg.content);
 
-
-
       streamReply.subscribe(content => {
         switch(content.name) {
         case 'stdout':
@@ -139,15 +139,18 @@ function main(c) {
         }
       });
 
-      const executionCount = Rx.Observable.merge(executeResult, executeReply)
-                                          .map(content => content.execution_count);
+      Rx.Observable.merge(executeResult, executeReply)
+                   .map(content => content.execution_count)
+                   .take(1)
+                   .subscribe(ct => {
+                     counter = ct + 1;
+                   });
 
-      executionCount.takeUntil(status.filter(x => x === 'idle'))
-        .last()
-        .subscribe(count => {
-          rl.setPrompt(`ick${langInfo.file_extension}:${count + 1}> `);
+      status.filter(x => x === 'idle')
+        .subscribe(() => {
+          rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
           rl.prompt();
-        });
+        }, console.error);
 
       shell.next(executeRequest);
 

@@ -7,6 +7,8 @@
  * and a backing kernel.                                                     *
  *****************************************************************************/
 
+const Rx = require('@reactivex/rxjs');
+
 const readline = require('readline');
 
 const enchannel = require('enchannel-zmq-backend');
@@ -61,7 +63,9 @@ function main(c) {
       renderer: new TerminalRenderer(),
     });
 
-    rl.setPrompt(`ick${langInfo.file_extension}> `);
+    var counter = 1;
+
+    rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
     rl.prompt();
 
     rl.on('line', (line) => {
@@ -85,9 +89,15 @@ function main(c) {
                               .filter(msg => msg.content)
                               .map(msg => msg.content.data);
 
+      const executeResult = childMessages.filter(msg => msg.header.msg_type === 'execute_result')
+                              .map(msg => msg.content);
+
       const executeReply = childMessages
                              .filter(msg => msg.header.msg_type === 'execute_reply')
                              .map(msg => msg.content);
+
+      const status = childMessages.filter(msg => msg.header.msg_type === 'status')
+                          .map(msg => msg.content.execution_state);
 
       const streamReply = childMessages
                              .filter(msg => msg.header.msg_type === 'stream')
@@ -129,10 +139,18 @@ function main(c) {
         }
       });
 
-      executeReply.subscribe(content => {
-        rl.setPrompt(`ick${langInfo.file_extension}:${content.execution_count}> `);
-        rl.prompt();
-      });
+      Rx.Observable.merge(executeResult, executeReply)
+                   .map(content => content.execution_count)
+                   .take(1)
+                   .subscribe(ct => {
+                     counter = ct + 1;
+                   });
+
+      status.filter(x => x === 'idle')
+        .subscribe(() => {
+          rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
+          rl.prompt();
+        }, console.error);
 
       shell.next(executeRequest);
 

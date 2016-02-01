@@ -103,6 +103,17 @@ function main(c) {
                              .filter(msg => msg.header.msg_type === 'stream')
                              .map(msg => msg.content);
 
+      const errorReplies = childMessages
+                            .filter(msg => msg.header.msg_type === 'error')
+                            .map(msg => msg.content);
+      const errorStream = Rx.Observable
+        .merge(errorReplies, executeReply.filter(x => x.status === 'error'));
+
+      errorStream.subscribe(err => {
+        process.stdout.write(`${err.ename}: ${err.evalue}\n`);
+        process.stdout.write(err.traceback.join('\n'));
+      });
+
       streamReply.subscribe(content => {
         switch(content.name) {
         case 'stdout':

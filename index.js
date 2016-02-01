@@ -65,7 +65,7 @@ function main(c) {
 
     var counter = 1;
 
-    rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
+    rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
     rl.prompt();
 
     rl.on('line', (line) => {
@@ -159,7 +159,7 @@ function main(c) {
 
       status.filter(x => x === 'idle')
         .subscribe(() => {
-          rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
+          rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
           rl.prompt();
         }, console.error);
 
@@ -180,7 +180,7 @@ function main(c) {
                            .map(msg => msg.content);
 
   kernelReply.subscribe(content => {
-    process.stdout.write(chalk.green(content.banner));
+    process.stdout.write(chalk.gray(content.banner));
     startREPL(content.language_info);
   });
   shell.next(kernelInfoRequest);

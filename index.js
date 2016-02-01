@@ -65,7 +65,7 @@ function main(c) {
 
     var counter = 1;
 
-    rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
+    rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
     rl.prompt();
 
     rl.on('line', (line) => {
@@ -102,6 +102,17 @@ function main(c) {
       const streamReply = childMessages
                              .filter(msg => msg.header.msg_type === 'stream')
                              .map(msg => msg.content);
+
+      const errorReplies = childMessages
+                            .filter(msg => msg.header.msg_type === 'error')
+                            .map(msg => msg.content);
+      const errorStream = Rx.Observable
+        .merge(errorReplies, executeReply.filter(x => x.status === 'error'));
+
+      errorStream.subscribe(err => {
+        process.stdout.write(`${err.ename}: ${err.evalue}\n`);
+        process.stdout.write(err.traceback.join('\n'));
+      });
 
       streamReply.subscribe(content => {
         switch(content.name) {
@@ -148,7 +159,7 @@ function main(c) {
 
       status.filter(x => x === 'idle')
         .subscribe(() => {
-          rl.setPrompt(`ick${langInfo.file_extension}:${counter}> `);
+          rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
           rl.prompt();
         }, console.error);
 
@@ -169,7 +180,7 @@ function main(c) {
                            .map(msg => msg.content);
 
   kernelReply.subscribe(content => {
-    process.stdout.write(chalk.green(content.banner));
+    process.stdout.write(chalk.gray(content.banner));
     startREPL(content.language_info);
   });
   shell.next(kernelInfoRequest);

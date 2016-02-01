@@ -7,6 +7,8 @@
  * and a backing kernel.                                                     *
  *****************************************************************************/
 
+const Rx = require('@reactivex/rxjs');
+
 const readline = require('readline');
 
 const enchannel = require('enchannel-zmq-backend');
@@ -61,7 +63,7 @@ function main(c) {
       renderer: new TerminalRenderer(),
     });
 
-    rl.setPrompt(`ick${langInfo.file_extension}> `);
+    rl.setPrompt(`ick${langInfo.file_extension}:1> `);
     rl.prompt();
 
     rl.on('line', (line) => {
@@ -85,13 +87,21 @@ function main(c) {
                               .filter(msg => msg.content)
                               .map(msg => msg.content.data);
 
+      const executeResult = childMessages.filter(msg => msg.header.msg_type === 'execute_result')
+                              .map(msg => msg.content);
+
       const executeReply = childMessages
                              .filter(msg => msg.header.msg_type === 'execute_reply')
                              .map(msg => msg.content);
 
+      const status = childMessages.filter(msg => msg.header.msg_type === 'status')
+                          .map(msg => msg.content.execution_state);
+
       const streamReply = childMessages
                              .filter(msg => msg.header.msg_type === 'stream')
                              .map(msg => msg.content);
+
+
 
       streamReply.subscribe(content => {
         switch(content.name) {
@@ -129,10 +139,15 @@ function main(c) {
         }
       });
 
-      executeReply.subscribe(content => {
-        rl.setPrompt(`ick${langInfo.file_extension}:${content.execution_count}> `);
-        rl.prompt();
-      });
+      const executionCount = Rx.Observable.merge(executeResult, executeReply)
+                                          .map(content => content.execution_count);
+
+      executionCount.takeUntil(status.filter(x => x === 'idle'))
+        .last()
+        .subscribe(count => {
+          rl.setPrompt(`ick${langInfo.file_extension}:${count + 1}> `);
+          rl.prompt();
+        });
 
       shell.next(executeRequest);
 

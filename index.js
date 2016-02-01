@@ -92,6 +92,10 @@ function main(c) {
       const executeResult = childMessages.filter(msg => msg.header.msg_type === 'execute_result')
                               .map(msg => msg.content);
 
+      const executeInput = childMessages
+                             .filter(msg => msg.header.msg_type === 'execute_input')
+                             .map(msg => msg.content);
+
       const executeReply = childMessages
                              .filter(msg => msg.header.msg_type === 'execute_reply')
                              .map(msg => msg.content);
@@ -106,6 +110,7 @@ function main(c) {
       const errorReplies = childMessages
                             .filter(msg => msg.header.msg_type === 'error')
                             .map(msg => msg.content);
+
       const errorStream = Rx.Observable
         .merge(errorReplies, executeReply.filter(x => x.status === 'error'));
 
@@ -150,7 +155,7 @@ function main(c) {
         }
       });
 
-      Rx.Observable.merge(executeResult, executeReply)
+      Rx.Observable.merge(executeResult, executeReply, executeInput)
                    .map(content => content.execution_count)
                    .take(1)
                    .subscribe(ct => {

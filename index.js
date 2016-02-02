@@ -26,10 +26,10 @@ const spawnteract = require('spawnteract');
 
 function main(c) {
   const identity = uuid.v4();
-  // const iopub = enchannel.createIOPubSubject(identity, kernel);
   const shell = enchannel.createShellSubject(identity, c.config);
+  const stdin = enchannel.createStdinSubject(identity, c.config);
+  // const iopub = enchannel.createIOPubSubject(identity, kernel);
   // const control = enchannel.createControlSubject(identity, kernel);
-  // const stdinChannel = enchannel.createStdinSubject(identity, kernel);
 
   function createMessage(session, msg_type) {
     const username = process.env.LOGNAME || process.env.USER ||
@@ -75,7 +75,7 @@ function main(c) {
         silent: false,
         store_history: true,
         user_expressions: {},
-        allow_stdin: false,
+        allow_stdin: true,
         stop_on_error: false,
       };
 
@@ -168,6 +168,26 @@ function main(c) {
           rl.prompt();
         }, console.error);
 
+
+      const stdinResponseMsgs = stdin
+                                   .filter(isChildMessage.bind(executeRequest))
+                                   .publish()
+                                   .refCount();
+
+      const inputRequests = stdinResponseMsgs
+                               .filter(msg => msg.header.msg_type === 'input_request')
+                               .map(msg => msg.content);
+
+      inputRequests.subscribe(msg => {
+        rl.question(chalk.green(msg.prompt || 'input>'), line => {
+          const inputReply = createMessage(sessionID, 'input_reply');
+          inputReply.content = {
+            value: line
+          };
+          stdin.next(inputReply);
+        });
+      });
+      
       shell.next(executeRequest);
 
     }).on('close', () => {
@@ -175,6 +195,7 @@ function main(c) {
       c.spawn.kill();
       shell.complete();
       iopub.complete();
+      stdin.complete();
       process.stdin.destroy();
       fs.unlink(c.connFile);
     });

@@ -28,10 +28,10 @@ function main(c) {
   const identity = uuid.v4();
   const shell = enchannel.createShellSubject(identity, c.config);
   const stdin = enchannel.createStdinSubject(identity, c.config);
-  // const iopub = enchannel.createIOPubSubject(identity, kernel);
-  // const control = enchannel.createControlSubject(identity, kernel);
 
-  function createMessage(session, msg_type) {
+  const session = uuid.v4();
+
+  function createMessage(msg_type) {
     const username = process.env.LOGNAME || process.env.USER ||
                      process.env.LNAME || process.env.USERNAME;
     return {
@@ -49,15 +49,13 @@ function main(c) {
     };
   }
 
-  const sessionID = uuid.v4();
-
   function isChildMessage(msg) {
     return this.header.msg_id === msg.parent_header.msg_id;
   }
 
   function startREPL(langInfo) {
     const rl = readline.createInterface(process.stdin, process.stdout, (line, callback) => {
-      const completeRequest = createMessage(sessionID, 'complete_request');
+      const completeRequest = createMessage('complete_request');
       completeRequest.content = {
         code: line,
         cursor_pos: line.length,
@@ -88,7 +86,7 @@ function main(c) {
     rl.prompt();
 
     rl.on('line', (line) => {
-      const executeRequest = createMessage(sessionID, 'execute_request');
+      const executeRequest = createMessage('execute_request');
       executeRequest.content = {
         code: line,
         silent: false,
@@ -198,7 +196,7 @@ function main(c) {
 
       inputRequests.subscribe(msg => {
         rl.question(chalk.green(msg.prompt), response => {
-          const inputReply = createMessage(sessionID, 'input_reply');
+          const inputReply = createMessage('input_reply');
           inputReply.content = {
             value: response,
           };
@@ -219,7 +217,7 @@ function main(c) {
     });
   }
 
-  const kernelInfoRequest = createMessage(sessionID, 'kernel_info_request');
+  const kernelInfoRequest = createMessage('kernel_info_request');
   const kernelReply = shell.filter(msg => msg.parent_header.msg_id === kernelInfoRequest.header.msg_id)
                            .map(msg => msg.content);
 

@@ -56,7 +56,26 @@ function main(c) {
   }
 
   function startREPL(langInfo) {
-    const rl = readline.createInterface(process.stdin, process.stdout);
+    const rl = readline.createInterface(process.stdin, process.stdout, (line, callback) => {
+      const completeRequest = createMessage(sessionID, 'complete_request');
+      completeRequest.content = {
+        code: line,
+        cursor_pos: line.length
+      }
+
+      const childMessages = shell.filter(isChildMessage.bind(completeRequest));
+
+      const completeReply = childMessages
+                              .filter(msg => msg.header.msg_type === 'complete_reply')
+                              .map(msg => msg.content);
+
+      completeReply.subscribe(content => {
+        callback(null, [content.matches, line])
+      });
+
+      shell.next(completeRequest);
+    });
+
     const iopub = enchannel.createIOPubSubject(identity, c.config);
 
     marked.setOptions({

@@ -179,7 +179,7 @@ function main(c) {
                                .map(msg => msg.content);
 
       inputRequests.subscribe(msg => {
-        rl.question(chalk.green(msg.prompt || 'input>'), line => {
+        rl.question(chalk.green(msg.prompt), line => {
           const inputReply = createMessage(sessionID, 'input_reply');
           inputReply.content = {
             value: line

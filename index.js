@@ -60,8 +60,8 @@ function main(c) {
       const completeRequest = createMessage(sessionID, 'complete_request');
       completeRequest.content = {
         code: line,
-        cursor_pos: line.length
-      }
+        cursor_pos: line.length,
+      };
 
       const childMessages = shell.filter(isChildMessage.bind(completeRequest));
 
@@ -70,7 +70,7 @@ function main(c) {
                               .map(msg => msg.content);
 
       completeReply.subscribe(content => {
-        callback(null, [content.matches, line])
+        callback(null, [content.matches, line]);
       });
 
       shell.next(completeRequest);
@@ -187,7 +187,6 @@ function main(c) {
           rl.prompt();
         }, console.error);
 
-
       const stdinResponseMsgs = stdin
                                    .filter(isChildMessage.bind(executeRequest))
                                    .publish()
@@ -198,15 +197,15 @@ function main(c) {
                                .map(msg => msg.content);
 
       inputRequests.subscribe(msg => {
-        rl.question(chalk.green(msg.prompt), line => {
+        rl.question(chalk.green(msg.prompt), response => {
           const inputReply = createMessage(sessionID, 'input_reply');
           inputReply.content = {
-            value: line
+            value: response,
           };
           stdin.next(inputReply);
         });
       });
-      
+
       shell.next(executeRequest);
 
     }).on('close', () => {

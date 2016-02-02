@@ -1,19 +1,16 @@
 # Interactive Console Experiments
 
-`ick` is an interactive console for Jupyter written in node.js.
+![ick inline](https://cloud.githubusercontent.com/assets/836375/12740614/727009c4-c93a-11e5-9bc3-eb9b9828d61d.png)
 
-This was put together to explore how to use `enchannel-zmq-backend` in an
-interactive terminal.
+`ick` is an interactive console for Jupyter written in node.js.
 
 ## Installation
 
-Make sure you have [zmq headers for your platform, build tools, yada yada](https://github.com/nteract/enchannel-zmq-backend#zeromq-dependency).
+Make sure you have [zmq headers for your platform, following the instructions from enchannel-zmq-backend.](https://github.com/nteract/enchannel-zmq-backend#zeromq-dependency).
 
 ```
 npm install -g ick
 ```
-
-:warning: This is full of bugs. Check out the issues to find out how to help!
 
 ## Running
 

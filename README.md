@@ -1,6 +1,6 @@
 # Interactive Console Experiments
 
-![ick inline](https://cloud.githubusercontent.com/assets/836375/12740614/727009c4-c93a-11e5-9bc3-eb9b9828d61d.png)
+![ick inline](https://cloud.githubusercontent.com/assets/836375/12740688/2ddc457e-c93b-11e5-811a-cf965490daac.png)
 
 `ick` is an interactive console for Jupyter written in node.js.
 

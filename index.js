@@ -213,7 +213,7 @@ function main(c) {
       iopub.complete();
       stdin.complete();
       process.stdin.destroy();
-      fs.unlink(c.connFile);
+      fs.unlink(c.connectionFile);
     });
   }
 

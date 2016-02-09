@@ -85,10 +85,13 @@ function main(c) {
     rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
     rl.prompt();
 
+    // Instantiate a string buffer for accumulating incomplete code strings
+    var buffer = "";
+
     rl.on('line', (line) => {
       const isCompleteRequest = createMessage('is_complete_request');
       isCompleteRequest.content = {
-        code: line
+        code: buffer || line
       };
       const isCompleteReply = shell.filter(isChildMessage.bind(isCompleteRequest))
                               .filter(msg => msg.header.msg_type === 'is_complete_reply')
@@ -98,7 +101,7 @@ function main(c) {
         if (content.status === 'complete' || content.status === 'invalid') {
           const executeRequest = createMessage('execute_request');
           executeRequest.content = {
-            code: line,
+            code: buffer || line,
             silent: false,
             store_history: true,
             user_expressions: {},
@@ -214,9 +217,11 @@ function main(c) {
             });
           });
 
+          // Clear the buffer
+          buffer = "";
           shell.next(executeRequest);
         } else {
-          console.log('what do with incomplete');
+          buffer += line;
         }
       });
 

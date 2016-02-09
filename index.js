@@ -95,7 +95,7 @@ function main(c) {
                               .map(msg => msg.content);
 
       isCompleteReply.subscribe(content => {
-        if (content.status === 'complete') {
+        if (content.status === 'complete' || content.status === 'invalid') {
           const executeRequest = createMessage('execute_request');
           executeRequest.content = {
             code: line,
@@ -148,12 +148,12 @@ function main(c) {
 
           streamReply.subscribe(content => {
             switch(content.name) {
-            case 'stdout':
-              process.stdout.write(content.text);
-              break;
-            case 'stderr':
-              process.stderr.write(content.text);
-              break;
+              case 'stdout':
+                process.stdout.write(content.text);
+                break;
+              case 'stderr':
+                process.stderr.write(content.text);
+                break;
             }
           });
 
@@ -215,6 +215,8 @@ function main(c) {
           });
 
           shell.next(executeRequest);
+        } else {
+          console.log('what do with incomplete');
         }
       });
 

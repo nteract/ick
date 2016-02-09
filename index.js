@@ -85,127 +85,147 @@ function main(c) {
     rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
     rl.prompt();
 
+    // Instantiate a string buffer for accumulating incomplete code strings
+    var buffer = "";
+
     rl.on('line', (line) => {
-      const executeRequest = createMessage('execute_request');
-      executeRequest.content = {
-        code: line,
-        silent: false,
-        store_history: true,
-        user_expressions: {},
-        allow_stdin: true,
-        stop_on_error: false,
+      const isCompleteRequest = createMessage('is_complete_request');
+      isCompleteRequest.content = {
+        code: buffer || line
       };
-
-      const childMessages = iopub.filter(isChildMessage.bind(executeRequest))
-                                 .publish()
-                                 .refCount();
-
-      const displayData = childMessages
-                              .filter(msg => msg.header.msg_type === 'execute_result' ||
-                                             msg.header.msg_type === 'display_data')
-                              .filter(msg => msg.content)
-                              .map(msg => msg.content.data);
-
-      const executeResult = childMessages.filter(msg => msg.header.msg_type === 'execute_result')
+      const isCompleteReply = shell.filter(isChildMessage.bind(isCompleteRequest))
+                              .filter(msg => msg.header.msg_type === 'is_complete_reply')
                               .map(msg => msg.content);
 
-      const executeInput = childMessages
-                             .filter(msg => msg.header.msg_type === 'execute_input')
-                             .map(msg => msg.content);
+      isCompleteReply.subscribe(content => {
+        if (content.status === 'complete' || content.status === 'invalid') {
+          const executeRequest = createMessage('execute_request');
+          executeRequest.content = {
+            code: buffer || line,
+            silent: false,
+            store_history: true,
+            user_expressions: {},
+            allow_stdin: true,
+            stop_on_error: false,
+          };
 
-      const executeReply = childMessages
-                             .filter(msg => msg.header.msg_type === 'execute_reply')
-                             .map(msg => msg.content);
+          const childMessages = iopub.filter(isChildMessage.bind(executeRequest))
+                                     .publish()
+                                     .refCount();
 
-      const status = childMessages.filter(msg => msg.header.msg_type === 'status')
-                          .map(msg => msg.content.execution_state);
+          const displayData = childMessages
+                                  .filter(msg => msg.header.msg_type === 'execute_result' ||
+                                                 msg.header.msg_type === 'display_data')
+                                  .filter(msg => msg.content)
+                                  .map(msg => msg.content.data);
 
-      const streamReply = childMessages
-                             .filter(msg => msg.header.msg_type === 'stream')
-                             .map(msg => msg.content);
+          const executeResult = childMessages.filter(msg => msg.header.msg_type === 'execute_result')
+                                  .map(msg => msg.content);
 
-      const errorReplies = childMessages
-                            .filter(msg => msg.header.msg_type === 'error')
-                            .map(msg => msg.content);
+          const executeInput = childMessages
+                                 .filter(msg => msg.header.msg_type === 'execute_input')
+                                 .map(msg => msg.content);
 
-      const errorStream = Rx.Observable
-        .merge(errorReplies, executeReply.filter(x => x.status === 'error'));
+          const executeReply = childMessages
+                                 .filter(msg => msg.header.msg_type === 'execute_reply')
+                                 .map(msg => msg.content);
 
-      errorStream.subscribe(err => {
-        process.stdout.write(`${err.ename}: ${err.evalue}\n`);
-        process.stdout.write(err.traceback.join('\n'));
-      });
+          const status = childMessages.filter(msg => msg.header.msg_type === 'status')
+                              .map(msg => msg.content.execution_state);
 
-      streamReply.subscribe(content => {
-        switch(content.name) {
-        case 'stdout':
-          process.stdout.write(content.text);
-          break;
-        case 'stderr':
-          process.stderr.write(content.text);
-          break;
-        }
-      });
+          const streamReply = childMessages
+                                 .filter(msg => msg.header.msg_type === 'stream')
+                                 .map(msg => msg.content);
 
-      displayData.subscribe(data => {
-        if(data['image/png']) {
-          temp.open('ick-image', (err, info) => {
-            if (err) {
-              console.error(err);
-              return;
+          const errorReplies = childMessages
+                                .filter(msg => msg.header.msg_type === 'error')
+                                .map(msg => msg.content);
+
+          const errorStream = Rx.Observable
+            .merge(errorReplies, executeReply.filter(x => x.status === 'error'));
+
+          errorStream.subscribe(err => {
+            process.stdout.write(`${err.ename}: ${err.evalue}\n`);
+            process.stdout.write(err.traceback.join('\n'));
+          });
+
+          streamReply.subscribe(content => {
+            switch(content.name) {
+              case 'stdout':
+                process.stdout.write(content.text);
+                break;
+              case 'stderr':
+                process.stderr.write(content.text);
+                break;
             }
-            const decodedData = new Buffer(data['image/png'], 'base64');
-            const writer = fs.createWriteStream(info.path);
-            writer.end(decodedData);
-            writer.on('finish', () => {
-              imageToAscii(info.path, (imErr, converted) => {
-                console.log(imErr || converted);
+          });
+
+          displayData.subscribe(data => {
+            if(data['image/png']) {
+              temp.open('ick-image', (err, info) => {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+                const decodedData = new Buffer(data['image/png'], 'base64');
+                const writer = fs.createWriteStream(info.path);
+                writer.end(decodedData);
+                writer.on('finish', () => {
+                  imageToAscii(info.path, (imErr, converted) => {
+                    console.log(imErr || converted);
+                  });
+                });
               });
+            }
+            else if(data['text/markdown']) {
+              console.log(marked(data['text/markdown']));
+            }
+            else if(data['text/plain']) {
+              console.log(data['text/plain']);
+            }
+          });
+
+          Rx.Observable.merge(executeResult, executeReply, executeInput)
+                       .map(content => content.execution_count)
+                       .take(1)
+                       .subscribe(ct => {
+                         counter = ct + 1;
+                       });
+
+          status.filter(x => x === 'idle')
+            .subscribe(() => {
+              rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
+              rl.prompt();
+            }, console.error);
+
+          const stdinResponseMsgs = stdin
+                                       .filter(isChildMessage.bind(executeRequest))
+                                       .publish()
+                                       .refCount();
+
+          const inputRequests = stdinResponseMsgs
+                                   .filter(msg => msg.header.msg_type === 'input_request')
+                                   .map(msg => msg.content);
+
+          inputRequests.subscribe(msg => {
+            rl.question(chalk.green(msg.prompt), response => {
+              const inputReply = createMessage('input_reply');
+              inputReply.content = {
+                value: response,
+              };
+              stdin.next(inputReply);
             });
           });
-        }
-        else if(data['text/markdown']) {
-          console.log(marked(data['text/markdown']));
-        }
-        else if(data['text/plain']) {
-          console.log(data['text/plain']);
+
+          // Clear the buffer
+          buffer = "";
+          shell.next(executeRequest);
+        } else {
+          buffer += line;
         }
       });
 
-      Rx.Observable.merge(executeResult, executeReply, executeInput)
-                   .map(content => content.execution_count)
-                   .take(1)
-                   .subscribe(ct => {
-                     counter = ct + 1;
-                   });
-
-      status.filter(x => x === 'idle')
-        .subscribe(() => {
-          rl.setPrompt(chalk.blue(`ick${langInfo.file_extension}:${counter}> `));
-          rl.prompt();
-        }, console.error);
-
-      const stdinResponseMsgs = stdin
-                                   .filter(isChildMessage.bind(executeRequest))
-                                   .publish()
-                                   .refCount();
-
-      const inputRequests = stdinResponseMsgs
-                               .filter(msg => msg.header.msg_type === 'input_request')
-                               .map(msg => msg.content);
-
-      inputRequests.subscribe(msg => {
-        rl.question(chalk.green(msg.prompt), response => {
-          const inputReply = createMessage('input_reply');
-          inputReply.content = {
-            value: response,
-          };
-          stdin.next(inputReply);
-        });
-      });
-
-      shell.next(executeRequest);
-
+      shell.next(isCompleteRequest);
     }).on('close', () => {
       console.log('Have a great day!');
       c.spawn.kill();

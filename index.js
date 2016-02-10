@@ -228,12 +228,25 @@ function main(c) {
       shell.next(isCompleteRequest);
     }).on('close', () => {
       console.log('Have a great day!');
-      c.spawn.kill();
-      shell.complete();
-      iopub.complete();
-      stdin.complete();
-      process.stdin.destroy();
-      fs.unlink(c.connectionFile);
+      const shutDownRequest = createMessage('shutdown_request');
+      shutDownRequest.content = {
+        restart: false
+      };
+      const shutDownReply = shell.filter(isChildMessage.bind(shutDownRequest))
+                        .filter(msg => msg.header.msg_type === 'shutdown_reply')
+                        .map(msg => msg.content);
+      shutDownReply.subscribe(content => {
+        if (!content.restart) {
+          c.spawn.kill();
+          shell.complete();
+          iopub.complete();
+          stdin.complete();
+          process.stdin.destroy();
+          fs.unlink(c.connFile);
+        }
+      });
+
+      shell.next(shutDownRequest);
     });
   }
 

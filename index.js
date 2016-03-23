@@ -18,7 +18,6 @@ const chalk = require('chalk');
 const marked = require('marked');
 const TerminalRenderer = require('marked-terminal');
 
-const temp = require('temp').track();
 const imageToAscii = require('image-to-ascii');
 
 const fs = require('fs');
@@ -162,19 +161,9 @@ function main(c) {
 
           displayData.subscribe(data => {
             if(data['image/png']) {
-              temp.open('ick-image', (err, info) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-                const decodedData = new Buffer(data['image/png'], 'base64');
-                const writer = fs.createWriteStream(info.path);
-                writer.end(decodedData);
-                writer.on('finish', () => {
-                  imageToAscii(info.path, (imErr, converted) => {
-                    console.log(imErr || converted);
-                  });
-                });
+              const decodedData = new Buffer(data['image/png'], 'base64');
+              imageToAscii(info.path, (imErr, converted) => {
+                console.log(imErr || converted);
               });
             }
             else if(data['text/markdown']) {

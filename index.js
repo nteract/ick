@@ -162,7 +162,7 @@ function main(c) {
           displayData.subscribe(data => {
             if(data['image/png']) {
               const decodedData = new Buffer(data['image/png'], 'base64');
-              imageToAscii(info.path, (imErr, converted) => {
+              imageToAscii(decodedData, (imErr, converted) => {
                 console.log(imErr || converted);
               });
             }

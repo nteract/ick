@@ -12,7 +12,7 @@
   "author": "Kyle Kelley <rgbkrk@gmail.com>",
   "license": "BSD-3-Clause",
   "dependencies": {
-    "@reactivex/rxjs": "^5.0.0-beta.1",
+    "@reactivex/rxjs": "5.0.0-beta.2",
     "chalk": "^1.1.1",
     "enchannel-zmq-backend": "^1.0.0",
     "image-to-ascii": "^3.0.0",

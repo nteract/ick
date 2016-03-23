@@ -15,10 +15,11 @@
     "@reactivex/rxjs": "^5.0.0-beta.1",
     "chalk": "^1.1.1",
     "enchannel-zmq-backend": "^1.0.0",
-    "image-to-ascii": "^3.0.0",
+    "image-to-ascii": "^2.3.1",
     "marked": "^0.3.5",
     "marked-terminal": "^1.6.1",
     "spawnteract": "1.0.0",
+    "temp": "^0.8.3",
     "uuid": "^2.0.1"
   },
   "devDependencies": {},

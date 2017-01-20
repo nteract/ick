@@ -1,5 +1,7 @@
 # Interactive Console Experiments
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/nteract/ick.svg)](https://greenkeeper.io/)
+
 ![ick inline](https://cloud.githubusercontent.com/assets/836375/12740688/2ddc457e-c93b-11e5-811a-cf965490daac.png)
 
 `ick` is an interactive console for Jupyter written in node.js.
